@@ -1,0 +1,154 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - Campus Virtual</title>
+  <!-- Estilos simples de ejemplo -->
+  <style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: url("{% static 'images/background.jpg' %}") no-repeat center center fixed;
+    background-size: cover;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+    .login-container {
+      background: #033963;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      width: 400px;
+      height: 50%;
+      text-align: center;
+      padding: 20px;
+    }
+    .justify-content-center {
+      justify-content: center !important;
+    }
+    .logo {
+      width: 180px;
+      margin-bottom: 10px;
+      height: 100px;
+    }
+    .login-title {
+      font-size: 1.2em;
+      margin-bottom: 20px;
+      color: #87dcf7;
+    }
+    .google-btn {
+      background: #eff8ff;
+      border-radius: 10px;
+      width: 90%;
+      cursor: pointer;
+        }
+    .google-btn:hover {
+      background: #2c6be0;
+    }
+  </style>
+
+  <!-- Firebase JS SDK (reemplaza con tu configuración) -->
+  <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<div class="login-container">
+  <!-- Aquí podrías poner una imagen alusiva, por ejemplo, la monja del login -->
+  <img src="{% static 'images/logo.png' %}" alt="Logo" class="logo">
+
+  <h2 class="login-title">Hola, bienvenido al ChatBot Saber Pro</h2>
+  <button class="google-btn justify-content-center" id="googleLoginBtn"><img src="https://accounts.google.com/favicon.ico" alt="" width="24" height="24" style="border-style: none;"></button>
+
+  
+  
+</div>
+
+<script>
+  // Configuración de Firebase (reemplaza con tus credenciales)
+  var firebaseConfig = {
+  apiKey: "AIzaSyBrF6fXa9mhglBDdDWJVj22UgcIJqCIh5k",
+  authDomain: "chatbot-a4032.firebaseapp.com",
+  projectId: "chatbot-a4032",
+  storageBucket: "chatbot-a4032.firebasestorage.app",
+  messagingSenderId: "692348410369",
+  appId: "1:692348410369:web:ea5310e62f496f3f997e00",
+  measurementId: "G-YE1SZNYBY3"
+};
+
+  // Inicializar Firebase
+  firebase.initializeApp(firebaseConfig);
+
+  // Obtener instancia de Auth
+  var auth = firebase.auth();
+
+  document.getElementById('googleLoginBtn').addEventListener('click', function() {
+    var provider = new firebase.auth.GoogleAuthProvider();
+    // Para restringir dominio, se puede usar 'hd' o verificar luego en el servidor
+    provider.setCustomParameters({
+      'hd': 'umariana.edu.co'
+    });
+
+    auth.signInWithPopup(provider)
+      .then(function(result) {
+        // Datos del usuario
+        var user = result.user;
+        var name = user.displayName;
+        var email = user.email;
+        var photo = user.photoURL;
+
+        // Enviar datos a Django para guardar en sesión
+        var formData = new FormData();
+        formData.append('email', email);
+        formData.append('name', name);
+        formData.append('photo', photo);
+
+        fetch('/firebase-auth/', {
+  method: 'POST',
+  body: formData,
+  headers: {
+    'X-CSRFToken': getCookie('csrftoken')
+  },
+  credentials: 'include'  // 🔥 Clave para que Django reconozca la cookie CSRF
+})
+        .then(response => response.json())
+        .then(data => {
+          if(data.status === 'ok'){
+            // Redirigir a home
+            window.location.href = '/home/';
+          } else {
+            alert(data.message || 'Error al iniciar sesión');
+            // Cerrar sesión en Firebase si el dominio no es válido
+            auth.signOut();
+          }
+        })
+        .catch(err => console.error(err));
+
+      })
+      .catch(function(error) {
+        console.error('Error al iniciar sesión con Google:', error);
+      });
+  });
+
+  // Función para obtener CSRF token de cookies (Django)
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+</script>
+
+</body>
+</html>
