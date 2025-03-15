@@ -92,7 +92,7 @@
       'hd': 'umariana.edu.co'
     });
 
-    auth.signInWithPopup(provider)
+    auth.signInWithRedirect(provider)
       .then(function(result) {
         // Datos del usuario
         var user = result.user;
